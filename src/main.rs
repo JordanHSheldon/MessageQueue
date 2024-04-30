@@ -1,9 +1,29 @@
-use std::{borrow::Cow, io::{Read, Write}, net::{TcpListener, TcpStream}, vec};
+use std::{borrow::BorrowMut, io::{Read, Write}, net::{TcpListener, TcpStream}};
+use std::sync::Arc;
 use queue::Queue;
 use serde::{Deserialize, Serialize};
-use serde_json::{Result, from_str};
+use axum::extract::{Path, Query, Json};
+use axum::{
+    routing::{get, post},
+    Router,
+};
+use axum::extract::State;
 
 mod queue;
+
+async fn enqueue(Json(payload): Json<QueueRequest>) {
+    println!("{},{}",payload.action, payload.id)
+}
+
+async fn dequeue(Json(payload): Json<QueueRequest>) {
+    println!("{},{}",payload.action, payload.id)
+}
+
+async fn handler(
+    State(state): State<Arc<Queue>>,
+) {
+   
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct QueueRequest {
@@ -11,59 +31,16 @@ pub struct QueueRequest {
     id: String
 }
 
-impl QueueRequest {
-    fn new() -> QueueRequest {
-        QueueRequest {
-        action: String::new(),
-        id: String::new()
-    }
-}
-}
+#[tokio::main]
+async fn main() {
+    let state = Arc::new(queue::Queue::new());
 
-fn handle_client(mut stream: TcpStream) -> QueueRequest{
-    let mut buffer = [0;1024];
-    stream.read(&mut buffer).expect("failed to read message.");
-    let request = String::from_utf8_lossy(&buffer[..]);
-    let body_start = request.find("\r\n\r\n").unwrap_or(0) + 4;
-    let body = &request[body_start..];
-    println!("{}",request);
-    let mut parsed = body.get(..25).unwrap_or("").to_string();
-    let mut QueueRequest = QueueRequest::new();
-    match serde_json::from_str::<QueueRequest>(&parsed) {
-        Ok(p) => {
-            let response = "HTTP/1.1 200 OK\r\n\
-            Content-Length: 2\r\n\
-            Content-Type: text/plain\r\n\
-            \r\n\
-            OK".as_bytes();
-            stream.write(response).expect("failed to write message");
-            QueueRequest = p;
-        },
-        Err(e) => {println!("{:?}", e);}
-    }
-    return QueueRequest;
-}
+    let app = Router::new()
+    .route("/enqueue", post(enqueue))
+    .route("/dequeue", post(dequeue))
+    .route("/", get(|| async { "Hello, World!" }))
+    .with_state(state);
 
-fn main(){
-    // make queue
-    let mut q = queue::Queue::new();
-
-    // create listener to recieve requests
-    let listener = TcpListener::bind("127.0.0.1:8888").
-        expect("Error binding ports");
-
-    // accept connections and process them serially
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) =>{
-                //std::thread::spawn(|| handle_client(stream));
-                q.enqueue(handle_client(stream).action.len().try_into().unwrap());
-                println!("Queue is:");
-                q.view();
-            }
-            Err(e) =>{
-                println!("{}",e)
-            }
-        }
-    }
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }

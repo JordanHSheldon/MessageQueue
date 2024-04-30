@@ -1,13 +1,13 @@
 
 pub struct Queue {
-    date: String,
+    _date: String,
     arr: Vec<u16>
 }
 
 impl Queue {
     pub fn new() -> Queue {
         Queue { 
-            date: "04/21/24".to_string(),
+            _date: "04/21/24".to_string(),
             arr: Vec::new()
         }
     }
@@ -71,7 +71,12 @@ impl Queue {
         return root;
     }
 
-    fn sort(){}
+    fn sort(&self){
+        // let newArr: Vec<u16> = Vec::new();
+        // while &self.arr.len() >= 1{
+        //     newArr.append(dequeue());
+        // }
+    }
 
     pub fn view(&mut self){
         for item in self.arr.as_slice() {
