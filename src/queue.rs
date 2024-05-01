@@ -1,7 +1,8 @@
 
+#[derive(Clone)]
 pub struct Queue {
     _date: String,
-    arr: Vec<u16>
+    pub arr: Vec<u16>
 }
 
 impl Queue {
@@ -69,18 +70,5 @@ impl Queue {
         }
 
         return root;
-    }
-
-    fn sort(&self){
-        // let newArr: Vec<u16> = Vec::new();
-        // while &self.arr.len() >= 1{
-        //     newArr.append(dequeue());
-        // }
-    }
-
-    pub fn view(&mut self){
-        for item in self.arr.as_slice() {
-            print!("{}",item)
-        }
     }
 }
